@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search</title>
+    <link href="{% static '/my_site/main.css/' %}" rel="stylesheet">
+</head>
+<body>
+<form method="get" action="/ajax/search/">
+    <h3><label for="id_q"></label>
+    <input type="text" name="q" id="id_q" value="{{ query }}" placeholder="Search">
+     <input type="submit" value="Search"></h3>
+</form>
+<br><br><br><br><br><br>
+{% if keyword_results or results %}
+ <p>You searched for "{{ query }}".</p>
+ {% if keyword_results %}
+ <p>Recommended pages:</p>
+ <ul>
+ {% for post in keyword_results %}
+ <li>
+  <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+ </li>
+ {% endfor %}
+ </ul>
+ {% endif %}
+ {% if results %}
+ <p>Search results:</p>
+ <ul>
+ {% for post in results %}
+ <li><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></li>
+ {% endfor %}
+ </ul>
+ {% endif %}
+ {% endif %}
+ {% if query and not keyword_results and not results %}
+ <p>No results found.</p>
+ {% endif %}
+
+</body>
+</html>

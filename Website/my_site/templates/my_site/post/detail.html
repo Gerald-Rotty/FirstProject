@@ -1,0 +1,101 @@
+{% extends "my_site/base.html" %}
+{% load my_site_tags %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+{{ post.title }}
+<p class="date">
+    Published {{ post.publish }} by {{ post.author }}
+</p>
+<p>
+    {{ post.body|markdown }}
+</p>
+
+<img src="{{ post.image.url }}" height="200" width="200" alt="no pic yet">
+<p>
+    <a href="{% url 'my_site:post_share' post.id %}">Share this post</a>
+</p><br><br>
+{% with total_likes=post.users_like.count users_like=post.users_like.all %}
+    <div>
+       <div>
+        <span class="count">
+          <span class="total">{{ total_likes }}</span>
+          like{{ total_likes|pluralize }}
+        </span>
+        <a href="#" data-id="{{ post.id }}" data-action="{% if request.user in users_like %}un{% endif %}like"
+           class="like button">
+          {% if request.user not in users_like %}
+            Like
+          {% else %}
+            Unlike
+          {% endif %}
+        </a>
+      </div>
+    </div>
+{% endwith %}
+<h2>Similar posts by tags</h2>
+{% for post in similar_posts %}
+<p>
+    <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+</p>
+
+{% empty %}
+There are no similar posts yet.
+{% endfor %}
+
+{% with comments.count as total_comments %}
+<h2>
+    {{ total_comments }} comment {{ total_comments|pluralize }}
+</h2>
+{% endwith %}
+{% for comment in comments %}
+<div class="comment">
+    <p class="info">
+        Comment {{ forloop.counter }} by {{ comment.name }}: <br>
+    </p>
+    {{ comment.body|linebreaks }}
+</div>
+{% empty %}
+<p>There are no comments yet.</p>
+{% endfor %}
+{% include "my_site/post/includes/comment_form.html" %}
+{% endblock %}
+
+
+{% block domready %}
+const url = '{% url "my_site:like" %}';
+var options = {
+  method: 'POST',
+  headers: {'X-CSRFToken': csrftoken},
+  mode: 'same-origin'
+}
+
+document.querySelector('a.like')
+        .addEventListener('click', function(e){
+  e.preventDefault();
+  var likeButton = this;
+
+  var formData = new FormData();
+  formData.append('id', likeButton.dataset.id);
+  formData.append('action', likeButton.dataset.action);
+  options['body'] = formData;
+
+  fetch(url, options)
+  .then(response => response.json())
+  .then(data => {
+    if (data['status'] === 'ok')
+    {
+      var previousAction = likeButton.dataset.action;
+
+      var action = previousAction === 'like' ? 'unlike' : 'like';
+      likeButton.dataset.action = action;
+      likeButton.innerHTML = action;
+
+      var likeCount = document.querySelector('span.count .total');
+      var totalLikes = parseInt(likeCount.innerHTML);
+          likeCount.innerHTML = previousAction === 'like' ? totalLikes + 1 : totalLikes - 1;
+    }
+  })
+});
+{% endblock %}
